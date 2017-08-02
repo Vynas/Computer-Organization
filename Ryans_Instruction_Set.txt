@@ -1,8 +1,3 @@
-instruction_file = open("Ryans_Instruction_Set.txt")
-x = instruction_file.readlines()
-instructions = [x.rstrip('\n') for x in open('Ryans_Instruction_Set.txt')]
-print(instructions)
-
 addi 3 5
 ori 8 40
 nor 2 8
