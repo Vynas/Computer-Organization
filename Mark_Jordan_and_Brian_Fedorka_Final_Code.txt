@@ -1,0 +1,738 @@
+# This code was written by Mark Jordan and Brian Fedorka
+# last modified 8/2/2017
+# it simulates a virtual machine, taking inputs in either assembly language or binary
+# documentation: help from stackoverflow, python wiki, and numpy wiki
+
+%matplotlib inline
+import matplotlib.pyplot as plt
+import numpy as np
+
+instruction_set = ["addi", 0, 27, # add 27 to register 0
+"la", 0, 3, # add 3 and register 0, then make it MAR = 30
+"addi", 1, 8, # add 8 to register 1
+"sw", 1, 0, # stores register 1 = 8 into Data_Memory[MAR=30]
+"lw", 2, 0, # loads Data_Memory[MAR=30]=8 into register 2
+"add", 2, 0, # adds register 2 = 8 and register 0 = 27 into register 2 = 35
+"sub", 1, 2, # subtracts register 2 = 35 from register 1 = 8 to make register 1 = -27
+"addi", 3, 5, # add 5 to register 3
+"ori", 3, 11, # or register 3 = 5 with 11 to make register 3 = 15
+"addi", 4, 5, # add 5 to register 4
+"nor", 2, 3, # nor register 2 = 35 and register 3 = 15 to make register 2 = 1111..11000
+"sll", 4, 3, # shift left register 4 by 3
+"slr", 4, 5, # shift right register 4 by 5 to = 1
+"addi", 5, 3, # add 3 to register 5
+"beq", 5, 7, # branch 7 down if register 5 = 0 (it doesnt)(at PC =14)
+"addi", 6, 3, # add 3 to register 6
+"sub", 5, 6, # subtract register 6 from register 5 to make register 5 = 0
+"beq", 5, 2, # skips 2 instructions if register 5 = 0 (it does, to blt)
+"ori", 2, 0, # placeholder
+"ori", 2, 0, # placeholder
+"blt", 6, 4, # skips 4 instructions if register 6 < 0 (its 3, so no)
+"blt", 1, 5, # skips 5 instructions if register 1 < 0 (r1 = -27)(blt is currently at PC = 21)
+"ori", 2, 0, # placeholder
+"ori", 2, 0, # placeholder
+"ori", 2, 0, # placeholder
+"j", 31, # jump to PC = 30
+"ori", 2, 0, # placeholder
+"j", 24, # jump to line 24, three instructions up 
+"ori", 2, 0, # placeholder
+"ori", 2, 0, # placeholder
+"ori", 2, 0, # placeholder
+"ori", 2, 0, # placeholder (PC = 31)
+]
+
+def Compiler(instruction_set):
+    """
+    This function takes an array that is formatted with ["command", integer, integer, "command", int, int, ..., int]
+    and turns it into 16 bit binary instructions.
+    
+    Input:
+    array[]
+    
+    Output:
+    array[][]
+    """
+    k = 0
+    i = 0
+    
+    while k < len(instruction_set): # size of input file array    do i need a +1?
+    
+        # If R-Type
+        # sets opcode
+        if instruction_set[k] == "add" or instruction_set[k] == "sub" or instruction_set[k] == "nor" or instruction_set[k] == "sll" or instruction_set[k] == "slr":
+            Instruction_Memory[i][0:4] = [0,0,0,0]
+            # sets function code
+            if instruction_set[k] == "add":
+                Instruction_Memory[i][12:16] = [0,0,0,1]
+                k += 1 
+            elif instruction_set[k] == "sub":
+                Instruction_Memory[i][12:16] = [0,0,1,0]
+                k += 1 
+            elif instruction_set[k] == "nor":
+                Instruction_Memory[i][12:16] = [0,0,1,1]
+                k += 1 
+            elif instruction_set[k] == "sll":
+                Instruction_Memory[i][12:16] = [0,1,0,0]
+                k += 1 
+            elif instruction_set[k] == "slr":
+                Instruction_Memory[i][12:16] = [0,1,0,1]
+                k += 1 
+            
+            # sets RA
+            m = np.binary_repr(instruction_set[k], width=4)
+            p = 4
+            q = 0
+            while p < 8:
+                Instruction_Memory[i][p] = m[q]
+                p+=1
+                q+=1
+            k += 1
+            
+            # sets RB
+            n = np.binary_repr(instruction_set[k], width=4)
+            r = 8
+            s = 0
+            while r < 12:
+                Instruction_Memory[i][r] = n[s]
+                r+=1
+                s+=1    
+            k += 1
+            i += 1
+
+        # If I_Type
+        # sets Opcode
+        elif instruction_set[k] == "la" or instruction_set[k] == "lw" or instruction_set[k] == "sw" or instruction_set[k] == "beq" or instruction_set[k] == "blt" or instruction_set[k] == "addi" or instruction_set[k] == "ori":
+            if instruction_set[k] == "la":
+                Instruction_Memory[i][0:4] = [0,0,0,1]
+                k += 1 
+            elif instruction_set[k] == "lw":
+                Instruction_Memory[i][0:4] = [0,0,1,0]
+                k += 1 
+            elif instruction_set[k] == "sw":
+                Instruction_Memory[i][0:4] = [0,0,1,1]
+                k += 1 
+            elif instruction_set[k] == "beq":
+                Instruction_Memory[i][0:4] = [0,1,0,0]
+                k += 1 
+            elif instruction_set[k] == "blt":
+                Instruction_Memory[i][0:4] = [1,0,0,0]
+                k += 1 
+            elif instruction_set[k] == "addi":
+                Instruction_Memory[i][0:4] = [0,1,0,1]
+                k += 1 
+            elif instruction_set[k] == "ori":
+                Instruction_Memory[i][0:4] = [0,1,1,0]
+                k += 1 
+            
+            # sets RA
+            m = np.binary_repr(instruction_set[k], width=4)
+            p = 4
+            q = 0
+            while p < 8:
+                Instruction_Memory[i][p] = m[q]
+                p+=1
+                q+=1
+            k += 1
+            
+            # sets immediate
+            n = np.binary_repr(instruction_set[k], width=8)
+            r = 8
+            s = 0
+            while s < 8:
+                Instruction_Memory[i][r] = n[s]
+                r+=1
+                s+=1    
+            k += 1
+            i += 1
+            
+        # If Jump
+        # sets opcode
+        elif instruction_set[k] == "j":
+            Instruction_Memory[i][0:4] = [0,1,1,1]
+            k += 1
+            
+            # sets immediate
+            m = np.binary_repr(instruction_set[k], width=12)
+            p = 4
+            q = 0
+            while p < 16:
+                Instruction_Memory[i][p] = m[q]
+                p+=1
+                q+=1
+            k += 1
+            i += 1
+    return Instruction_Memory
+
+def Processor(Instruction_Memory):
+    """
+    This function is the core processor of the virtual machine. 
+    It takes the input instruction set and calls every other function
+    
+    Input:
+    array[][]
+    
+    Output:
+    prints Register values    
+    """
+    print('This program implements a virtual machine.')
+    print(' ')
+
+    # creates Data_Memory_Array, the 2^16 x 16 bit data memory
+    i = 0
+    Data_Memory_Array = []
+    while i<=2**16:
+        Data_Memory_Array.append(np.binary_repr(i, width=16)) # each word is its binary address to show we can preload data
+        i+=1
+
+    # creates Register_File, the 16x16 bit register file
+    i=0
+    Register_File = []
+    while i<=15:
+        Register_File.append(np.binary_repr(0, width=16))
+        i+=1
+
+    MAR = '0000000000000000' # initializes the Memory Access Register
+    PC = 0 # starts the program counter at 0 (first instruction)
+
+    
+    # Main loop
+    while PC <= 127: # limited to 128 instructions
+        print("PC = ", PC) # shows instruction number being performed
+
+        # Calls for instruction corresponding to current PC from Instruction_Memory
+        Instruction = Instruction_Fetch(PC,Instruction_Memory)
+        if np.all(Instruction == [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]):
+            print("There are no instructions left.")
+            break
+        print("Instruction", Instruction)
+
+        # Creates the appropriate control signals for the instruction
+        Zero_Extend, Write_Choice, Opcode, Register_A, Register_B, Immediate, Jump, Jump_Amount, Branch, ALU_Operation, Mem_Read, Mem_Write, ALU_Src, Mem_toReg, Reg_Write = Control_Unit(Instruction)
+
+        # extends the Immediate value from 8 bits to 16 bits
+        Sixteen_Bit_Immediate = Immediate_Extend(Zero_Extend, Immediate)
+
+        # fetches the data from the Registers
+        Data_A, Data_B, Shamt, RegisterA_Number = Register_Data_Fetch(Register_A, Register_B, Register_File, ALU_Operation)
+
+        # Sets ALU_Input1 = Data_A since this is always true
+        ALU_Input1 = Data_A
+
+        # Chooses which data will be used for ALU_Input2
+        ALU_Input2 = ALU_Mux(Data_B, Sixteen_Bit_Immediate, ALU_Src)
+
+        # Performs all ALU operations
+        ALU_Output,Branch_Result = ALU(ALU_Input1, ALU_Input2, ALU_Operation, Shamt)
+
+        # reads or writes data from Data_Memory_Array as appropriate
+        Data_Memory_Array, Mem_Data = Data_Memory(Data_Memory_Array, MAR, Mem_Read, Mem_Write, ALU_Output)
+
+        # chooses whether Write_Data_Input is from the ALU or Mem_data
+        Write_Data_Input = Memory_Mux(Mem_toReg, ALU_Output, Mem_Data)
+
+        # writes data to register files as appropriate
+        Register_File, MAR = Write_Data(Reg_Write, Write_Choice, Write_Data_Input, RegisterA_Number, Register_File, MAR)
+
+        # adder that increments the PC by 1 
+        PC = Program_Counter_Increase(PC)
+
+        # adds the immediate to the PC to get the PC_Branch
+        PC_Branch, Branch_Amount = Branch_Adder(Branch, PC, Sixteen_Bit_Immediate)
+
+        # determines input signal whether branch is taken or not
+        Branch_Mux_Src = Branch_AND_Gate(Branch, Branch_Result)
+
+        # Chooses to use incremented PC or take PC_Branch
+        PC = Branch_Mux(PC, PC_Branch, Branch_Mux_Src)
+
+        # determines whether a jump is taken or not
+        PC = Jump_Mux(PC, Jump, Jump_Amount)
+
+        # Print 'outputs'
+        print(' ') #empty line after each instruction is run
+        print("Registers in use:")
+        print("Register 0:", Register_File[0])
+        print("Register 1:", Register_File[1])
+        print("Register 2:", Register_File[2])
+        print("Register 3:", Register_File[3])
+        print("Register 4:", Register_File[4])
+        print("Register 5:", Register_File[5])
+        print("Register 6:", Register_File[6])
+        input("Press the enter key to continue ") #pause at the end of each instruction for step by step review
+        print(" ")
+        print(" ")
+        
+    # print final results
+    print(" ")
+    print("The final state of each register is: ")
+    print(" ")
+    print("MAR = ", MAR)
+    for i in range(0,16):
+        print("Register ", i, " = ", Register_File[i])
+
+def Program_Counter_Increase(PC):
+    PC += 1
+    return PC
+
+def Instruction_Fetch(PC, Instruction_Memory):
+    Temp_ins = Instruction_Memory[PC]
+    Instruction1 = [Temp_ins[0:1],Temp_ins[1:2],Temp_ins[2:3],Temp_ins[3:4],Temp_ins[4:5],Temp_ins[5:6],Temp_ins[6:7],Temp_ins[7:8],Temp_ins[8:9],Temp_ins[9:10],Temp_ins[10:11],Temp_ins[11:12],Temp_ins[12:13],Temp_ins[13:14],Temp_ins[14:15],Temp_ins[15:16]]
+    Instruction = np.concatenate(Instruction1)
+    return Instruction
+
+def Control_Unit(Instruction):
+    #initializing several variables
+    Opcode = Instruction[0:4]
+    Zero_Extend = 0
+    Jump_Amount = [0,0,0,0,0,0,0,0,0,0,0,0]
+    Write_Choice = 0
+    
+    # R-Type Instructions
+    if np.all(Opcode == [0,0,0,0]):
+        Register_A = Instruction[4:8]
+        Register_B = Instruction[8:12]
+        Immediate = [0,0,0,0,0,0,0,0]
+        Jump = 0
+        Branch = 0
+        Mem_Read = 0
+        Mem_Write = 0
+        ALU_Src = 0
+        Mem_toReg = 0
+        Reg_Write = 1
+        Function_Code = Instruction[12:16]
+        
+        if np.all(Function_Code == [0,0,0,1]):
+            print("R-type Instruction - Add")
+            ALU_Operation = "Add"
+            
+        elif np.all(Function_Code == [0,0,1,0]):
+            print("R-type Instruction - Subtract")
+            ALU_Operation = "Sub"
+            
+        elif np.all(Function_Code == [0,0,1,1]):
+            print("R-type Instruction - Nor")
+            ALU_Operation = "Nor"
+            
+        elif np.all(Function_Code == [0,1,0,0]):
+            print("R-type Instruction - Shift Logical Left")
+            ALU_Operation = "SLL"
+            
+        elif np.all(Function_Code == [0,1,0,1]):
+            print("R-type Instruction - Shift Logical Right")
+            ALU_Operation = "SLR"
+            
+        else:
+            print("Error, no matching Function_Code")
+            
+        print("Register adressing is used")
+       
+    
+    
+    # I-type Instructions
+    not_a = 0
+    not_b = 0
+    if np.all(Opcode == [0,0,0,0]):
+        not_a = 1
+    if np.all(Opcode == [0,1,1,1]):
+        not_b = 1
+    if not_a != 1 and not_b != 1:
+        Immediate = Instruction[8:16]
+        Register_A = Instruction[4:8]
+        Register_B = [0,0,0,0] # unused
+        Jump = 0
+        
+    # la instruction
+    if np.all(Opcode == [0,0,0,1]):
+        print("I-type Instruction - la")
+        print("Base addressing is used")
+        Write_Choice = 1
+        Branch = 0
+        Mem_Read = 0
+        Mem_Write = 0
+        ALU_Src = 1
+        Mem_toReg = 0
+        Reg_Write = 1
+        ALU_Operation = "Add"
+        
+    # lw instruction
+    if np.all(Opcode == [0,0,1,0]):
+        print("I-type Instruction - lw ")
+        print("Base (displacement) addressing is used")
+        Branch = 0
+        Mem_Read = 1
+        Mem_Write = 0
+        ALU_Src = 0
+        Mem_toReg = 1
+        Reg_Write = 1
+        ALU_Operation = "None"
+
+    # sw instruction
+    if np.all(Opcode == [0,0,1,1]):
+        print("I-type Instruction - sw ")
+        print("Base (displacement) addressing is used")
+        Branch = 0
+        Mem_Read = 0
+        Mem_Write = 1
+        ALU_Src = 0
+        Mem_toReg = 0
+        Reg_Write = 0
+        ALU_Operation = "None"
+    
+    # beq instructions
+    if np.all(Opcode == [0,1,0,0]):
+        print("I-type Instruction - beq ")
+        print("PC-relative addressing is used if branch is taken")
+        Branch = 1
+        Mem_Read = 0
+        Mem_Write = 0
+        ALU_Src = 2      
+        Mem_toReg = 0
+        Reg_Write = 0
+        ALU_Operation = "Add"
+    
+    # blt instructions
+    if np.all(Opcode == [1,0,0,0]):
+        print("I-type Instruction - blt ")
+        print("PC-relative addressing is used if branch is taken")
+        Branch = 1
+        Mem_Read = 0
+        Mem_Write = 0
+        ALU_Src = 2      
+        Mem_toReg = 0
+        Reg_Write = 0
+        ALU_Operation = "Sub"
+        
+    # addi instructions
+    if np.all(Opcode == [0,1,0,1]):
+        print("I-type Instruction - addi ")
+        print("Immediate addressing is used")
+        Branch = 0
+        Mem_Read = 0
+        Mem_Write = 0
+        ALU_Src = 1
+        Mem_toReg = 0
+        Reg_Write = 1
+        ALU_Operation = "Add"
+    
+    # ori instructions
+    if np.all(Opcode == [0,1,1,0]):
+        print("I-type Instruction - ori ")
+        print("Immediate addressing is used")
+        Zero_Extend = 1
+        Branch = 0
+        Mem_Read = 0
+        Mem_Write = 0
+        ALU_Src = 1
+        Mem_toReg = 0
+        Reg_Write = 1
+        ALU_Operation = "Or"
+        
+    # Jump instructions
+    if np.all(Opcode == [0,1,1,1]):
+        print("J-type Instruction - Jump ")
+        print("Pseudo-direct addressing is used")
+        for i in range(4,16):
+            Jump_Amount[i-4] = Instruction[i]
+        Immediate = [0,0,0,0,0,0,0,0]
+        Register_A = [0,0,0,0]
+        Register_B = [0,0,0,0]
+        Jump = 1
+        Branch = 0
+        Mem_Read = 0
+        Mem_Write = 0
+        ALU_Src = 0
+        Mem_toReg = 0
+        Reg_Write = 0
+        ALU_Operation = "None"
+        
+    print("ALU_Operation:",ALU_Operation)
+    return Zero_Extend, Write_Choice, Opcode, Register_A, Register_B, Immediate, Jump, Jump_Amount, Branch, ALU_Operation, Mem_Read, Mem_Write, ALU_Src, Mem_toReg, Reg_Write
+
+def Immediate_Extend(Zero_Extend, Immediate):
+    i = 0
+    if Zero_Extend == 0: # sign extend
+        while i <= 7:
+            Immediate = np.insert(Immediate, 0, 0)
+            i += 1
+    if Zero_Extend == 1: # zero extend
+        while i <= 7:
+            a = Immediate[0]
+            Immediate = np.insert(Immediate, 0, a)
+            i += 1
+    Sixteen_Bit_Immediate = Immediate
+    return Sixteen_Bit_Immediate
+
+def Register_Data_Fetch(Register_A, Register_B, Register_File, ALU_Operation):
+    # converts from binary to decimal
+    a = Register_A[0]
+    b = Register_A[1]
+    c = Register_A[2]
+    d = Register_A[3]
+    RegisterA_Number = int(8*a+4*b+2*c+d)
+   
+    # converts from binary to decimal
+    a = Register_B[0]
+    b = Register_B[1]
+    c = Register_B[2]
+    d = Register_B[3]
+    RegisterB_Number = int(8*a+4*b+2*c+d)
+    
+    # sets data to data from correct register
+    Data_A = Register_File[RegisterA_Number]
+    Data_B = Register_File[RegisterB_Number]
+    
+    Shamt = 0 # here for output
+    if ALU_Operation == "SLL" or ALU_Operation == "SLR":
+        Shamt = RegisterB_Number
+
+    return Data_A, Data_B, Shamt, RegisterA_Number
+
+def ALU_Mux(Data_B, Sixteen_Bit_Immediate, ALU_Src):
+    if ALU_Src == 0:
+        ALU_Input2 = Data_B
+    if ALU_Src == 1:
+        ALU_Input2 = Sixteen_Bit_Immediate
+    if ALU_Src == 2:
+        ALU_Input2 = [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]
+    return ALU_Input2
+
+def ALU(ALU_Input1, ALU_Input2, ALU_Operation, Shamt):
+    Branch_Result = 0
+    ALU_Output = ALU_Input2
+
+    # determines if the input is a negative number. If so, converts using twos complement
+    # remembers if already negative
+    negative1 = 0
+    if int(ALU_Input1[8]) == 1:
+        # negative
+        negative1 = 1
+        ALU_Input1_neg = ALU_Input1
+        # already negative
+        i = 15
+        while i > 0:
+            if int(ALU_Input1[i]) == 1:
+                k = i-1
+                while k >= 0 and k < 15:
+                    if int(ALU_Input1[k]) == 1:
+                        ALU_Input1[k] = 0
+                    elif int(ALU_Input1[k]) == 0:
+                        ALU_Input1 = list(ALU_Input1)               
+                        ALU_Input1 = list(map(int, ALU_Input1))
+                        ALU_Input1[k] = 1
+                    k-=1
+                i = 0
+            elif int(ALU_Input1[i]) == 0:
+                i -= 1
+                
+    ALU_Input2 = list(ALU_Input2)               
+    ALU_Input2 = list(map(int, ALU_Input2))            
+    
+    # determines if the input is a negative number. If so, converts using twos complement.
+    # remembers if already negative
+    negative2 = 0
+    if int(ALU_Input2[8]) == 1:
+        # negative
+        negative2 = 1
+        ALU_Input2_neg = ALU_Input2
+        # already negative
+        i = 15
+        while i > 0:
+            if int(ALU_Input2[i]) == 1:
+                k = i-1
+                while k >= 0 and k < 15:
+                    if int(ALU_Input2[k]) == 1:
+                        ALU_Input2[k] = 0
+                    elif int(ALU_Input2[k]) == 0:
+                        ALU_Input2 = list(ALU_Input2)               
+                        ALU_Input2 = list(map(int, ALU_Input2))
+                        ALU_Input2[k] = 1
+                    k-=1
+                i = 0
+            elif int(ALU_Input2[i]) == 0:
+                i -= 1
+        
+    # converts from binary to decimal, ignoring extended bits
+    k = int(ALU_Input1[9])
+    l = int(ALU_Input1[10])
+    m = int(ALU_Input1[11])
+    n = int(ALU_Input1[12])
+    o = int(ALU_Input1[13])
+    p = int(ALU_Input1[14])
+    q = int(ALU_Input1[15])
+    ALU_Input1_Number = q+2*p+4*o+8*n+16*m+32*l+64*k 
+    
+    # 
+    if negative1 == 1:
+        ALU_Input1_Number = -ALU_Input1_Number
+        ALU_Input1 = ALU_Input1_neg
+        
+    # converts from binary to decimal, ignoring extended bits
+    k = ALU_Input2[9]
+    l = ALU_Input2[10]
+    m = ALU_Input2[11]
+    n = ALU_Input2[12]
+    o = ALU_Input2[13]
+    p = ALU_Input2[14]
+    q = ALU_Input2[15]
+    ALU_Input2_Number = q+2*p+4*o+8*n+16*m+32*l+64*k 
+    
+    if negative2 == 1:
+        ALU_Input2_Number = -ALU_Input2_Number
+        ALU_Input2 = ALU_Input2_neg
+
+    # performs ALU operations
+    if ALU_Operation == "Add":
+        ALU_Output_Number = int(ALU_Input1_Number+ALU_Input2_Number)
+        ALU_Output = np.binary_repr(ALU_Output_Number, width=16)
+        if ALU_Output_Number == 0:
+            Branch_Result = 1
+        
+    if ALU_Operation == "Sub":
+        ALU_Output_Number = int(ALU_Input1_Number-ALU_Input2_Number)
+        ALU_Output = np.binary_repr(ALU_Output_Number, width=16)
+        if ALU_Output_Number < 0:
+            Branch_Result = 1
+            
+    if ALU_Operation == "Or":
+        i = 0
+        while i < 16:
+            a = ALU_Input1[i]
+            b = ALU_Input2[i]
+            if a == 1 or b == 1 or a == "1" or b == "1":
+                ALU_Output[i] = 1
+            else:
+                ALU_Output[i] = 0
+            i += 1
+        
+    if ALU_Operation == "Nor":
+        i = 0
+        while i < 16:
+            a = ALU_Input1[i]
+            b = ALU_Input2[i]
+            ALU_Output = list(ALU_Output)
+            if a == 1 or b == 1 or a == "1" or b == "1":
+                ALU_Output[i] = 0
+            else:
+                ALU_Output[i] = 1
+            i += 1
+            
+    if ALU_Operation == "SLL":
+        i = 0
+        while i < Shamt:
+            ALU_Input1 = ALU_Input1+"0"
+            ALU_Input1 = ALU_Input1[1:]
+            i += 1
+        ALU_Output = ALU_Input1
+        
+    if ALU_Operation == "SLR":
+        i = 0
+        while i < Shamt:
+            ALU_Input1 = "0"+ALU_Input1
+            ALU_Input1 = ALU_Input1[:-1]
+            i += 1
+        ALU_Output = ALU_Input1
+        
+    if ALU_Operation == "None":
+        ALU_Output = ALU_Input1
+    
+    return ALU_Output, Branch_Result
+
+def Data_Memory(Data_Memory_Array, MAR, Mem_Read, Mem_Write, ALU_Output):
+    MAR_Number = int(MAR, 2) # converts from binary to decimal
+    print("MAR_Number", MAR_Number)
+    print("MAR", MAR)
+    Mem_Data = Data_Memory_Array[MAR_Number] # just here to have an output
+    
+    # if writing
+    if Mem_Write == 1:
+        print("Modified Data_Memory before", Data_Memory_Array[MAR_Number])
+        Data_Memory_Array[MAR_Number] = ALU_Output
+        print("Modified Data_Memory after", Data_Memory_Array[MAR_Number])
+        Mem_Data = Data_Memory_Array[MAR_Number] # just here to have an output
+        
+    # if reading
+    if Mem_Read == 1:
+        Mem_Data = Data_Memory_Array[MAR_Number]
+        
+    return Data_Memory_Array, Mem_Data
+
+def Memory_Mux(Mem_toReg, ALU_Output, Mem_Data):
+    if Mem_toReg == 0:
+        Write_Data_Input = ALU_Output
+    if Mem_toReg == 1:
+        Write_Data_Input = Mem_Data
+    return Write_Data_Input
+
+def Write_Data(Reg_Write, Write_Choice, Write_Data_Input, RegisterA_Number, Register_File, MAR):
+    if Reg_Write == 1:
+        # if writing to register
+        if Write_Choice == 0:
+            Register_File[RegisterA_Number] = Write_Data_Input
+        
+        # if writing to MAR
+        if Write_Choice == 1:
+            MAR = Write_Data_Input
+            
+    return Register_File, MAR
+
+def Branch_Adder(Branch, PC, Sixteen_Bit_Immediate):
+    Sixteen_Bit_Immediate_int = [0]*16
+    i = 0
+    
+    # converts data type 
+    while i < 16:
+        Sixteen_Bit_Immediate_int[i] = int(Sixteen_Bit_Immediate[i])
+        i+=1
+    Sixteen_Bit_Immediate_String = "".join(str(e) for e in Sixteen_Bit_Immediate_int)
+    Sixteen_Bit_Immediate_Number = int(Sixteen_Bit_Immediate_String,2)
+    
+    Branch_Amount = Sixteen_Bit_Immediate_Number
+    PC_Branch = PC+Branch_Amount    
+    
+    return PC_Branch, Branch_Amount
+
+def Branch_AND_Gate(Branch, Branch_Result):
+    if Branch == 1:
+        if Branch_Result == 1:
+            Branch_Mux_Src = 1
+        else:
+            Branch_Mux_Src = 0
+    else:
+        Branch_Mux_Src = 0
+    return Branch_Mux_Src
+
+def Branch_Mux(PC, PC_Branch, Branch_Mux_Src):
+    if Branch_Mux_Src == 0:
+        PC = PC
+    if Branch_Mux_Src == 1:
+        PC = PC_Branch
+    return PC
+
+def Jump_Mux(PC, Jump, Jump_Amount):
+    if Jump == 0:
+        PC = PC
+    if Jump == 1:
+        #converts from binary to decimal, and into correct data type
+        b = int(Jump_Amount[0])
+        c = int(Jump_Amount[1])
+        d = int(Jump_Amount[2])
+        e = int(Jump_Amount[3])
+        f = int(Jump_Amount[4])
+        g = int(Jump_Amount[5])
+        h = int(Jump_Amount[6])
+        j = int(Jump_Amount[7])
+        k = int(Jump_Amount[8])
+        l = int(Jump_Amount[9])
+        m = int(Jump_Amount[10])
+        n = int(Jump_Amount[11])
+        Jump_Amount_Number = n+2*m+4*l+8*k+16*j+32*h+64*g+128*f+256*e+512*d+1024*c+2048*b
+        
+        PC = Jump_Amount_Number
+        
+    return PC
+
+Instruction_Memory = np.zeros((2**16,16))
+Compiler(instruction_set)
+print(Instruction_Memory[21])
+
+Processor(Instruction_Memory)
