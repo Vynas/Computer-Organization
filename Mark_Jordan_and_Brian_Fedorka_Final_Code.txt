@@ -362,10 +362,10 @@ def Control_Unit(Instruction):
         Branch = 0
         Mem_Read = 1
         Mem_Write = 0
-        ALU_Src = 0
+        ALU_Src = 1
         Mem_toReg = 1
         Reg_Write = 1
-        ALU_Operation = "None"
+        ALU_Operation = "Add"
 
     # sw instruction
     if np.all(Opcode == [0,0,1,1]):
@@ -374,10 +374,10 @@ def Control_Unit(Instruction):
         Branch = 0
         Mem_Read = 0
         Mem_Write = 1
-        ALU_Src = 0
+        ALU_Src = 1
         Mem_toReg = 0
         Reg_Write = 0
-        ALU_Operation = "None"
+        ALU_Operation = "Add"
     
     # beq instructions
     if np.all(Opcode == [0,1,0,0]):
